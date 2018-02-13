@@ -1,0 +1,134 @@
+---
+# file: roles/A-TCS/tasks/chapter_4.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- name: "04.01.00 Password Requirements\n\tAccounts that have password expiration > 45 days must be restricted from interactive login.\n\tThis is not possible on AWS since the ec2-user is the main account used to give access. In order to provide equivalent protection, sshd_config must have PasswordAuthentication disabled."
+  command: grep --silent "^\s*PasswordAuthentication\s\+no$" /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+- name: "04.01.00 Password Requirements\n\tAccounts that have password expiration > 45 days must be restricted from interactive login.\n\tThis is not possible on AWS since the ec2-user is the main account used to give access. In order to provide equivalent protection, any particular instance must not stay up for more than 45 days."
+  command: awk '($1 > (60.0*60.0*24.0*45) ) { exit 1 }' /proc/uptime
+  check_mode: no
+  changed_when: False
+
+# 04.02.00 This line left intentionally blank.
+
+- name: "04.03.00 Password Requirements\n\tPassword minimum length."
+  command: grep --silent "^\s*PASS_MIN_LEN\s\+8$" /etc/login.defs
+  check_mode: no
+  changed_when: False
+- name: "04.03.01 Password Requirements\n\tPassword minimum length."
+  command: grep --silent "^\s*minlen\s*\=\s*8$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.04.02 Password Requirements\n\tPassword complexity."
+  command: grep --silent "^\s*minclass\s*\=\s*3$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.05.02 Password Requirements\n\tDigits"
+  command: grep --silent "^\s*dcredit\s*\=\s*0$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.06.02 Password Requirements\n\tUpper case characters"
+  command: grep --silent "^\s*ucredit\s*\=\s*0$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.07.02 Password Requirements\n\tLower case characters"
+  command: grep --silent "^\s*lcredit\s*\=\s*0$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.08.02 Password Requirements\n\tOther characters"
+  command: grep --silent "^\s*ocredit\s*\=\s*0$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.09.02 Password Requirements\n\tPassword free of consecutive identical characters"
+  command: grep --silent "^\s*maxrepeat\s*\=\s*1$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.10.02 Password Requirements\n\tNumber of characters that must change when a password is changed"
+  command: grep --silent "^\s*difok\s*\=\s*4$" /etc/security/pwquality.conf
+  check_mode: no
+  changed_when: False
+
+- name: "04.11.00 Password Requirements\n\tMinimum Password Age"
+  command: grep --silent "^\s*PASS_MIN_DAYS\s\+7$" /etc/login.defs
+  check_mode: no
+  changed_when: False
+
+- name: "04.12.00 Password Requirements\n\tNumber of passwords remembered (history)"
+  command: grep --silent "^\s*password\s\+sufficient\s\+pam_unix\.so\s\+.*remember=12\s*$" /etc/pam.d/system-auth
+  check_mode: no
+  changed_when: False
+- name: "04.12.02 Password Requirements\n\tNumber of passwords remembered (history)"
+  copy:
+    src: ./files/zero
+    dest: /etc/security/opassword
+    owner: root
+    group: root
+    mode: 0600
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "04.13.02 Password Requirements\n\tLogin retries"
+  command: grep --silent "pam_faillock.so\s\+.*deny=6" /etc/pam.d/system-auth
+  check_mode: no
+  changed_when: False
+
+- name: "04.14.00 Password Requirements\n\troot password"
+  shell: "passwd --status root | cut -f2"
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_lines_root_pw_status
+- name: "04.14.00 Password Requirements\n\troot password"
+  fail:
+    msg: "root's password is not set"
+  when: item == "NP"
+  with_items: "{{ r_lines_root_pw_status.stdout_lines }}"
+
+- name: "04.15.00 Password Requirements\n\tPassword files ownership"
+  stat:
+    path: /etc/shadow
+  register: r_stats_shadow
+- name: "04.15.00 Password Requirements\n\tPassword files ownership"
+  assert:
+    that: r_stats_shadow.stat.pw_name == "root"
+    msg: "/etc/shadow must be owned by root"
+
+- name: "04.16.00 Password Requirements\n\tNumber of days given to warn of an aging password"
+  command: grep --silent "^\s*PASS_WARN_AGE\s\+7$" /etc/login.defs
+  check_mode: no
+  changed_when: False
+- name: "04.16.00 Password Requirements\n\tNumber of days given to warn of an aging password"
+  shell: 'grep -v "^\(adm\|sshd\|uucp\|bin\|unknown\|nobody\|daemon\|nuucp\|sys\|ftp\|lp\|dbus\|polkitd\|tss\|postfix\|chrony\|rpcuser\|nfsnobody\)" /etc/shadow | cut -d: -f6'
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_lines_shadow_field6
+- name: "04.16.00 Password Requirements\n\t"
+  assert:
+    that: item == "7"
+    msg: "sixth field of all lines in /etc/shadow must be 7"
+  with_items: "{{ r_lines_shadow_field6.stdout_lines }}"
+

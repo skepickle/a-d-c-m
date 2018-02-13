@@ -1,0 +1,323 @@
+---
+# file: roles/A-TCS/tasks/chapter_2.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+
+- name: "02.01.00 Roles / Permissions / Privileges - All Users\n\tRetrieve stats of /etc/shadow"
+  stat:
+    path: /etc/shadow
+  register: r_stats_shadow
+- name: "02.01.00 Roles / Permissions / Privileges - All Users\n\tCheck permissions of /etc/shadow"
+  assert:
+    that: not r_stats_shadow.stat.exists or
+          (                                 not r_stats_shadow.stat.wusr and not r_stats_shadow.stat.xusr and
+           not r_stats_shadow.stat.rgrp and not r_stats_shadow.stat.wgrp and not r_stats_shadow.stat.xgrp and
+           not r_stats_shadow.stat.roth and not r_stats_shadow.stat.woth and not r_stats_shadow.stat.xoth)
+    msg: "/etc/shadow permissions must equal 400 or more stringent"
+
+- name: "02.02.00 - 02.11.00 Roles / Permissions / Privileges - All Users\n\tPrevent Interactive Login: password string in /etc/shadow is '!!' or '*'"
+  command: awk '(/^{{ item }}:/ && !/^{{ item }}:(\*|\!\!):/) { exit 1 }' /etc/shadow
+  become: True
+  become_method: sudo
+  become_user: root
+  check_mode: no
+  changed_when: False
+  with_items:
+    - adm
+    - bin
+    - daemon
+    - gnats
+    - nobody
+    - postfix
+    - sshd
+    - sync
+    - sys
+    - unknown
+- name: "02.02.00 - 02.21.36 Roles / Permissions / Privileges - All Users\n\tPrevent Interactive Login: shell = nologin or false"
+  command: awk '(/^{{ item }}:/ && !/:(\/sbin\/nologin|\/bin\/false)$/) { exit 1 }' /etc/passwd
+  check_mode: no
+  changed_when: False
+  with_items:
+    - adm
+    - bin
+    - daemon
+    - gnats
+    - nobody
+    - postfix
+    - sshd
+    - sync
+    - sys
+    - unknown
+    - ftp
+    - lp
+    - lrc
+    - mail
+    - man
+    - news
+    - nuucp
+    - uucp
+    - www
+    - abrt
+    - apache
+    - avahi
+    - avahi-autoipid
+    - dbus
+    - exim
+    - games
+    - gdm
+    - gopher
+    - haldaemon
+    - halt
+    - htp
+    - nfsnobody
+    - ntp
+    - operator
+    - oprofile
+    - pcap
+    - pulse
+    - qemu
+    - qpidd
+    - rpc
+    - rpcuser
+    - rtkit
+    - saslauth
+    - shutdown
+    - tcpdump
+    - uidadmin
+    - usbmuxd
+    - vcsa
+    - xfs
+    - rpm
+    - mailnull
+    - smmsp
+    - nscd
+    - dbmsvc
+    - oraromn
+
+- name: "02.22.00 Roles / Permissions / Privileges - All Users\n\t/etc/cron.allow must be created with only root as its entry"
+  copy:
+    src: ./files/etc/cron.allow
+    dest: /etc/cron.allow
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+
+# 02.22.01 Line left intentionally blank
+
+- name: "02.23.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file paths for /var/spool/cron/*"
+  find:
+    paths: /var/spool/cron
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_paths_var_spool_cron
+- name: "02.23.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file stats for /var/spool/cron/*"
+  stat:
+    path: "{{ item.path }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items: "{{ r_paths_var_spool_cron.files }}"
+  register: r_stats_var_spool_cron
+- name: "02.23.00 Roles / Permissions / Privileges - All Users\n\tcronjobs in /var/spool/cron must have permissions = 755 or stronger"
+  fail:
+    msg: "{{ item.stat.path }} permissions not strong enough"
+  when: item.stat.rgrp or item.stat.roth
+  with_items: "{{ r_stats_var_spool_cron.results }}"
+
+- name: "02.24.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file paths for /etc/rc.d/* (recursively)"
+  find:
+    paths: /etc/rc.d
+    recurse: yes
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_paths_etc_rcd
+- name: "02.24.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file stats for /etc/rc.d/* (recursively)"
+  stat:
+    path: "{{ item.path }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items: "{{ r_paths_etc_rcd.files }}"
+  register: r_stats_etc_rcd
+- name: "02.24.00 Roles / Permissions / Privileges - All Users\n\tsuid should not be set on any files in /etc/rc.d"
+  fail:
+    msg: "suid is set on {{ item.stat.path }}"
+  when: item.stat.isuid
+  with_items: "{{ r_stats_etc_rcd.results }}"
+
+- name: "02.25.00 Roles / Permissions / Privileges - All Users\n\tRetrieve paths for all home directories"
+  shell: "cut -d: -f6 /etc/passwd"
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_lines_home_dirs
+- name: "02.25.00 Roles / Permissions / Privileges - All Users\n\tRetrieve stats for all home directories"
+  stat:
+    path: "{{ item }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items: "{{ r_lines_home_dirs.stdout_lines }}"
+  register: r_stats_home_dir
+- name: "02.25.00 Roles / Permissions / Privileges - All Users\n\tsuid should not be set on any home directories"
+  fail:
+    msg: "suid is set on {{ item.stat.path }}"
+  when: item.stat.exists and item.stat.isuid
+  with_items: "{{ r_stats_home_dir.results }}"
+
+- name: "02.26.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file paths for /etc/rc.d/rc* (recursively)"
+  find:
+    paths: /etc/rc.d
+    patterns: "rc*"
+    recurse: yes
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_paths_etc_rcd_rc
+- name: "02.26.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file stats for /etc/rc.d/rc* (recursively)"
+  stat:
+    path: "{{ item.path }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items: "{{ r_paths_etc_rcd_rc.files }}"
+  register: r_stats_etc_rcd_rc
+- name: "02.26.00 Roles / Permissions / Privileges - All Users\n\tsgid should not be set on any rc* files in /etc/rc.d"
+  fail:
+    msg: "sgid is set on {{ item.stat.path }}"
+  when: item.stat.isgid
+  with_items: "{{ r_stats_etc_rcd_rc.results }}"
+
+- name: "02.27.00 Roles / Permissions / Privileges - All Users\n\tsgid should not be set on any home directories"
+  fail:
+    msg: "sgid is set on {{ item.stat.path }}"
+  when: item.stat.exists and item.stat.isgid
+  with_items: "{{ r_stats_home_dir.results }}"
+
+- name: "02.28.00 Roles / Permissions / Privileges - All Users\n\tRetrieve file stats for /etc/services"
+  stat:
+    path: /etc/services
+  register: r_stats_etc_services
+- name: "02.28.00 Roles / Permissions / Privileges - All Users\n\t/etc/services must be owned by root with permissions = 644 or more stringent"
+  fail:
+    msg: "/etc/services permissions not stringent enough"
+  when: r_stats_etc_services.stat.exists and
+        ((r_stats_etc_services.stat.pw_name != "root") or
+                                                                             r_stats_etc_services.stat.xusr or
+                                           r_stats_etc_services.stat.wgrp or r_stats_etc_services.stat.xgrp or
+                                           r_stats_etc_services.stat.woth or r_stats_etc_services.stat.xoth)
+
+- name: "02.29.00 - 02.29.02 Roles / Permissions / Privileges - All Users\n\tBypassing the various requirements surrounding traceroute by simply requiring that traceroute not be installed"
+  yum:
+    name: traceroute
+    state: absent
+
+- name: "02.30.00 Roles / Permissions / Privileges - All Users\n\tsendmail must not be installed"
+  yum:
+    name: sendmail
+    state: absent
+
+- name: "02.31.00 Roles / Permissions / Privileges - All Users\n\tRetrieve stats for /root"
+  stat:
+    path: /root
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_root
+- name: "02.31.00 Roles / Permissions / Privileges - All Users\n\t/root permissions must be 0700"
+  fail:
+    msg: "/root home directory permissions are not 0700"
+  when: "not r_stats_root.stat.exists or r_stats_root.stat.mode != '0700'"
+
+- name: "02.32.00 Roles / Permissions / Privileges - All Users\n\troot's shell must be set to /bin/bash"
+  command: awk '(/^root:/ && !/:\/bin\/bash$/) { exit 1 }' /etc/passwd
+  check_mode: no
+  changed_when: False
+
+- name: "02.33.00 Roles / Permissions / Privileges - All Users\n\tRetrieve stats for /etc/passwd"
+  stat:
+    path: /etc/passwd
+  register: r_stats_etc_passwd
+- name: "02.33.00 Roles / Permissions / Privileges - All Users\n\t/etc/passwd permissions must be 644"
+  fail:
+    msg: "/etc/passwd permissions are not 0644"
+  when: "r_stats_etc_passwd.stat.mode != '0644'"
+
+# 02.34.00 Line left intentionally blank.
+
+- name: "02.35.00 Roles / Permissions / Privileges - All Users\n\tAll interactive users must have a home directory"
+  command: awk 'BEGIN { FS = ":" } ; $7 !~ /^(\/sbin\/nologin|\/bin\/false)$/ { if (system("if [ ! -d " $6 " ]; then exit 1; fi") != 0) { exit 1 } }' /etc/passwd
+  check_mode: no
+  changed_when: False
+
+- name: "02.36.00 Roles / Permissions / Privileges - All Users\n\tAll interactive users must own their home directory"
+  command: awk 'BEGIN { FS = ":" } ; $7 !~ /^(\/sbin\/nologin|\/bin\/false)$/ { if (system("if [ $(stat --format=''%U'' " $6 ") != " $1 " ]; then exit 1; fi") != 0) { exit 1 } }' /etc/passwd
+  check_mode: no
+  changed_when: False
+
+- name: "02.37.00 Roles / Permissions / Privileges - All Users\n\tInteractive users' home directories will have the user's Primary GID"
+  command: awk 'BEGIN { FS = ":" } ; $7 !~ /^(\/sbin\/nologin|\/bin\/false)$/ { if (system("if [ $(stat --format=''%g'' " $6 ") != $(id --group " $1 ") ]; then exit 1; fi") != 0) { exit 1 } }' /etc/passwd
+  check_mode: no
+  changed_when: False
+
+- name: "02.38.00 Roles / Permissions / Privileges - All Users\n\tAccounts that have password expiration > 45 days must be restricted from interactive login.\n\tThis is not possible on AWS since the ec2-user is the main account used to give access. In order to provide equivalent protection, sshd_config must have PasswordAuthentication disabled."
+  command: grep --silent "^\s*PasswordAuthentication\s\+no$" /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "02.38.00 Roles / Permissions / Privileges - All Users\n\tAccounts that have password expiration > 45 days must be restricted from interactive login.\n\tThis is not possible on AWS since the ec2-user is the main account used to give access. In order to provide equivalent protection, any particular instance must not stay up for more than 45 days."
+  command: awk '($1 > (60.0*60.0*24.0*45) ) { exit 1 }' /proc/uptime
+  check_mode: no
+  changed_when: False
+
+- name: "02.39.00 Roles / Permissions / Privileges - All Users\n\tPermitUserEnvironment must be disabled in sshd_config"
+  command: awk '(/^\s*PermitUserEnvironment\s/ && !/\sno$/) { exit 1 }' /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "02.40.00 Roles / Permissions /Privileges - All Users\n\tStrictModes must be enabled in sshd_config"
+  command: awk '(/^\s*StrictModes\s/ && !/\syes$/) { exit 1 }' /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "02.41.00 Roles / Permissions /Privileges - All Users\n\tAcceptEnv must not exist in sshd_config"
+  command: awk '(/^\s*AcceptEnv\s/) { exit 1 }' /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "02.42.00 Roles / Permissions / Privileges - All Users\n\t/etc/at.allow must be created with only root as its entry"
+  copy:
+    src: ./files/etc/at.allow
+    dest: /etc/at.allow
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+

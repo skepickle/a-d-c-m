@@ -1,0 +1,74 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Create the DNS Proxy",
+  "Parameters": {
+    "InstanceType": {
+      "Description": "EC2 instance type",
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t2.micro",
+        "t2.small"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    }
+  },
+  "Resources": {
+    "DNSProxy": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": "aws_nimbus",
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DNSProxy"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.29",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "echo test\n",
+                "#yum makecache fast\n",
+                "yum remove -y docker-ce docker-ce-selinux\n",
+                "ip link del docker0\n",
+                "echo 'domain-needed'           > /etc/dnsmasq.d/a.conf\n",
+                "echo 'no-resolv'              >> /etc/dnsmasq.d/a.conf\n",
+                "echo 'server=22.252.129.2'    >> /etc/dnsmasq.d/a.conf\n",
+                "echo 'no-dhcp-interface=eth0' >> /etc/dnsmasq.d/a.conf\n",
+                "echo 'domain=a.aws.int'       >> /etc/dnsmasq.d/a.conf\n",
+                "systemctl enable dnsmasq\n",
+                "systemctl start dnsmasq\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "DNSProxyDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+         "HostedZoneName" : "a.aws.int.",
+         "Comment" : "DNS name for DNS Proxy",  
+         "Name" : "dns.a.aws.int",
+         "Type" : "A",
+         "TTL" : "900",
+         "ResourceRecords" : [
+            { "Fn::GetAtt" : [ "DNSProxy", "PrivateIp" ] }
+         ]
+      }
+   }
+  }
+}

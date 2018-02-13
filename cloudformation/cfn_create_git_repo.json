@@ -1,0 +1,130 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Create the GitRepo and EBS volume for storing cloud config data",
+  "Parameters": {
+    "InstanceType": {
+      "Description": "EC2 instance type",
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    }
+  },
+  "Resources": {
+    "GitRepo": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": "aws_nimbus",
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GitRepo"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.30",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "useradd git\n",
+                "mkdir /gitdata\n",
+                "mkfs -t ext4 /dev/xvdf\n",
+                "mount /dev/xvdf /gitdata\n",
+                "cp /etc/fstab /etc/fstab.orig\n",
+                "bash -c 'sudo file -s /dev/xvdf | sed -e \"s/^.* UUID=\\([-0-9a-f]*\\) .*/UUID=\\1 \\/gitdata ext4 defaults,nofail/\" >> /etc/fstab'\n",
+                "yum install -y git\n",
+                "mkdir -p /gitdata/22.252.129.32/28.git\n",
+                "mkdir -p /gitdata/22.252.129.64/28.git\n",
+                "mkdir -p /gitdata/22.252.129.96/28.git\n",
+                "mkdir -p /gitdata/22.252.129.128/28.git\n",
+                "mkdir -p /gitdata/22.252.129.160/28.git\n",
+                "mkdir -p /gitdata/22.252.129.194/28.git\n",
+                "mkdir -p /gitdata/22.252.129.224/28.git\n",
+                "chown -R git:git /gitdata\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.32/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.64/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.96/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.128/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.160/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.194/28.git'\n",
+                "sudo -u git bash -c 'git init --bare --shared /gitdata/22.252.129.224/28.git'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.32/28.git/config  receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.64/28.git/config  receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.96/28.git/config  receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.128/28.git/config receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.160/28.git/config receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.194/28.git/config receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'git config --file /gitdata/22.252.129.224/28.git/config receive.denyNonFastForwards false'\n",
+                "sudo -u git bash -c 'mkdir /home/git/.ssh'\n",
+                "sudo -u git bash -c 'chmod 700 /home/git/.ssh'\n",
+                "sudo -u git bash -c 'touch /home/git/.ssh/authorized_keys'\n",
+                "sudo -u git bash -c 'chmod 600 /home/git/.ssh/authorized_keys'\n",
+                "sudo -u git bash -c 'echo \"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3c2gNywbwzRbG6E6dlP79upB8yRktaLKtrgMWo4aFcN13XRNZaB+sxFEPMeMK/SHkgM11U43iL6cKVcJPe6qbobCGbpz6t4uj7SIlYmLGjI+6qjctd6kPnptE8N4ZpbUhGKhFMbMQcugm2YtmZxRnc084Pw7KnoLYCHt7nay/HvAE1ou6NJB1WHEBtF+KuAXqyYQd6mpSVl3lK3sggBpaNCnK7M9HQkDl5VnQInX11isLAFEYEi+xZ3XdKPlSHodLDamo9AXwD7qMvDZPEytehU/uz40rnbb1pg+CvtnQVSRy9eMJSB+BDRzGGplIIiUm73pSrbmzCHaoUhpy/nql AN911299AD@va10dwvhrs300\" >> /home/git/.ssh/authorized_keys'\n",
+                "sudo -u git bash -c 'echo \"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDNvD2rNo2ORaYdaSjFbX3pnmCkKTMJ8hxGJGtsDpY11nxATKH3S2LHLFahJz+R4rFcCGysAq8lIyZOGYMGVbtLdYw95Zb4CkjsWVsKmo3TPEIFDJJodt0pZZKuCf/hd8UgcgGFN2A0zI1UjrH1kaVoB3S6ylq/m5DShB6vcMsh+Mkxpn8fyA3WBrFUCex2UoD8N4rqApBFuiLh7FlGNO2k1U7pM3k2Iv3RXysoXUtXvBZNbBwZ4axjtHWXG25tSXYC96WqgtYJgK5Tmd0Eo/GlHzlsUoa1I2mYETQLSVVcmynSN8309dUGhUXK6mMKPD0SIfH4bn80z3CNkE2wSdY1bfZBrxt1LKv6Ctu+zwLZTPbyiZcrgUkMmehTA5HjFiHOK+8jVB4bpb+YwSVCL5xP5QfHQAHb4JOWd6NyGNhtCBIj32U1jfqFEr+U3FJrrOJtOnDOMiZoILyQEB3sSbNfQvdlOZDHIzxTRATifvUKTZQNNPxOgzy7zWgyX5y77/ROiVTP38nWiib1pcOykhglI8b/nBtrKMXGzcYiACtnilVvYE5tJwcXVSjHzuwPxFY5UZfdULuQIDaRkhvvNVVoeVI1/xxcqAm3Jsia75OTJE8/6mKWHz3w9mMTJHGXL8N/AKnN/aZQI6H/CKUbKjpj76j6zYoWNmnei33MO5owgQ== swetha@a.com\" >> /home/git/.ssh/authorized_keys'\n",
+                "sudo -u git bash -c 'echo \"ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEA4zMFrDrj+EkyxsjpSAbRRUbDf+UJ4f686K3v87cAlCh3P53TwqRdFmpqVuvaPKhbGnImCLBWnU/HScrNZKUip21rpp7AN3SJ5Wr70Nox3c7D0g83vbEa9cQ4MEmheacRZrvjIKYrOLddOTjHTaM7P2MJYThGwfvMK/uYHeVOOGlx7vOsVlf2hseFlJaPylMAMzoJot5UMKqveBDfzJIHZJZxTaf70wx9hE5ja1IxZ23srSNrrWnHF+1T3vt5qYGOykGJgURP0bTYnS/0DTDvS4fZqFbu1mo1uUpybL+hjgpUjqMUMwqry1b7797StaRz+uMozaDPg6cCdFFJxhwPplMAKQ1nwulijS9EJGObTl8vhngAqhDcA0qFA9fYP7jYCBKAnbRtkyuZsOUHITcbgEXHTrFbQaJzwrZn0+ONnradsairPGPHF/EFeHjK52OQfccEcndzfhoOBg48cCicjM9hmD6J4bt+ANM4FGwtChiuAYkmEugpxVAa00dVFp4IkUhxwyJj1cwR/MahPVlYA8fEoqcQSKaF3v+JsCs6tNGMVpMMs2XUL6jec4IcDXd2qUk53plfjEMeltiTxJ64mI9Xe1Jq/bD6bJFoeE6dol/lcsrJ4dtICAR6h40W4JEtAIr/JPyxBFIJ+yXe1iLMujbPaSTbOvjDr/6fcgH4xFM= SRCmcmbb@bamboo_agents\" >> /home/git/.ssh/authorized_keys'\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "GitRepoEBSVolume": {
+      "Type": "AWS::EC2::Volume",
+      "Properties": {
+        "Size": "10",
+        "AvailabilityZone": "us-east-1d",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GitRepoVolume"
+          },
+          {
+              "Key": "Snapshot-Schedule",
+              "Value": "daily"
+          }
+        ]
+      },
+      "DeletionPolicy": "Snapshot"
+    },
+    "GitRepoEBSVolumeAttachment": {
+      "Type": "AWS::EC2::VolumeAttachment",
+      "Properties": {
+        "Device": "/dev/sdf",
+        "InstanceId": {
+          "Ref": "GitRepo"
+        },
+        "VolumeId": { "Ref" : "GitRepoEBSVolume" }
+      }
+    },
+    "GitDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+         "HostedZoneName" : "a.aws.int.",
+         "Comment" : "DNS name for Git repo",  
+         "Name" : "git.a.aws.int",
+         "Type" : "A",
+         "TTL" : "900",
+         "ResourceRecords" : [
+            { "Fn::GetAtt" : [ "GitRepo", "PrivateIp" ] }
+         ]
+      }
+   }
+  }
+}

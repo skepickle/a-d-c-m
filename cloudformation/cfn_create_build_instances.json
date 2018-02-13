@@ -1,0 +1,146 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation to create Nimbus build related servers in the build subnet",
+  "Parameters": {
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+    },
+    "InstanceType": {
+      "Description": "EC2 instance type",
+      "Type": "String",
+      "Default": "t2.small",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    }
+  },
+  "Resources": {
+    "Docker300": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DockerBuilder300"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.4"
+      }
+    },
+    "Docker301": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DockerBuilder301"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.5"
+      }
+    },
+    "Docker302": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DockerBuilder302"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.6"
+      }
+    },
+    "Docker303": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DockerBuilder303"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.7"
+      }
+    },
+    "Docker304": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": "subnet-a20c00f9",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "DockerBuilder304"
+          }
+        ],
+        "PrivateIpAddress": "22.252.129.8"
+      }
+    }
+  }
+}

@@ -1,0 +1,616 @@
+---
+# file: roles/A-TCS/tasks/chapter_5.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- name: "05.01.00 Operating System Services and Network Settings\n\tFile Permissions"
+  shell: 'find / -not \( -path /sys/fs -prune \) -not \( -path /proc -prune \) -not \( -path /var/lib/docker/overlay -prune \) -perm /002 -type f | wc -l'
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_lines_num_world_writeable_files
+- name: "05.01.00 Operating System Services and Network Settings\n\tFile Permissions"
+  assert:
+    that: item == "0"
+    msg: "the number of world-writable files on the filesystem is non-zero"
+  with_items: "{{ r_lines_num_world_writeable_files.stdout_lines }}"
+
+- name: "05.02.00 Operating System Services and Network Settings\n\tDirectory Permissions"
+  shell: 'find / -not \( -path /sys/fs -prune \) -not \( -path /proc -prune \) -not \( -perm /1000 \) -perm /002 -type d | wc -l'
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_lines_num_world_writeable_dirs
+- name: "05.02.00 Operating System Services and Network Settings\n\tDirectory Permissions"
+  assert:
+    that: item == "0"
+    msg: "the number of world-writable directories on the filesystem is non-zero"
+  with_items: "{{ r_lines_num_world_writeable_dirs.stdout_lines }}"
+
+- name: "05.03.00 Operating System Services and Network Settings\n\tPermission of /etc/"
+  stat:
+    path: "/etc/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc
+- name: "05.03.00 Operating System Services and Network Settings\n\tPermission of /etc/"
+  assert:
+    that: not r_stats_etc.stat.exists or
+          (not r_stats_etc.stat.wgrp and not r_stats_etc.stat.woth)
+    msg: "/etc is not set with permission of 755 or more stringent"
+
+- name: "05.04.00 Operating System Services and Network Settings\n\tPermission of /etc/init.d/"
+  stat:
+    path: "/etc/init.d/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_initd
+- name: "05.04.00 Operating System Services and Network Settings\n\tPermission of /etc/init.d/"
+  assert:
+    that: not r_stats_etc_initd.stat.exists or
+          (not r_stats_etc_initd.stat.wgrp and not r_stats_etc_initd.stat.woth)
+    msg: "/etc/init.d is not set with permission of 755 or more stringent"
+
+- name: "05.05.00 Operating System Services and Network Settings\n\tPermission of /etc/profile"
+  stat:
+    path: "/etc/profile"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_profile
+- name: "05.05.00 Operating System Services and Network Settings\n\tPermission of /etc/profile"
+  assert:
+    that: not r_stats_etc_profile.stat.exists or
+          (                                      not r_stats_etc_profile.stat.xusr and
+           not r_stats_etc_profile.stat.wgrp and not r_stats_etc_profile.stat.xgrp and
+           not r_stats_etc_profile.stat.woth and not r_stats_etc_profile.stat.xoth)
+    msg: "/etc/profile is not set with permission of 644 or more stringent"
+
+- name: "05.06.00 Operating System Services and Network Settings\n\tPermission of /etc/ssh/"
+  stat:
+    path: "/etc/ssh/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_ssh
+- name: "05.06.00 Operating System Services and Network Settings\n\tPermission of /etc/ssh/"
+  assert:
+    that: not r_stats_etc_ssh.stat.exists or
+          (not r_stats_etc_ssh.stat.rgrp and not r_stats_etc_ssh.stat.wgrp and not r_stats_etc_ssh.stat.xgrp and
+           not r_stats_etc_ssh.stat.roth and not r_stats_etc_ssh.stat.woth and not r_stats_etc_ssh.stat.xoth)
+    msg: "/etc/ssh is not set with permission of 700 or more stringent"
+
+- name: "05.07.00 Operating System Services and Network Settings\n\tPermission of /usr/local/etc/"
+  stat:
+    path: "/usr/local/etc/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_usr_local_etc
+- name: "05.07.00 Operating System Services and Network Settings\n\tPermission of /usr/local/etc/"
+  assert:
+    that: not r_stats_usr_local_etc.stat.exists or
+          (not r_stats_usr_local_etc.stat.wgrp and not r_stats_usr_local_etc.stat.woth)
+    msg: "/usr/local/etc/ is not set with permission of 755 or more stringent"
+
+- name: "05.08.00 Operating System Services and Network Settings\n\tPermission of /var/adm/"
+  stat:
+    path: "/var/adm/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_var_adm
+- name: "05.08.00 Operating System Services and Network Settings\n\tPermission of /var/adm/"
+  assert:
+    that: not r_stats_var_adm.stat.exists or
+          (not r_stats_var_adm.stat.wgrp and not r_stats_var_adm.stat.woth)
+    msg: "/var/adm/ is not set with permission of 755 or more stringent"
+
+# 05.09.00 This line left intentionally blank.
+
+# 05.10.00 This line left intentionally blank.
+
+- name: "05.11.00 Operating System Services and Network Settings\n\tPermission of /var/spool/"
+  file:
+    path: /var/spool
+    mode: 0750
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.12.00 Operating System Services and Network Settings\n\tPermission of /var/log/"
+  stat:
+    path: "/var/log/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_var_log
+- name: "05.12.00 Operating System Services and Network Settings\n\tPermission of /var/log/"
+  assert:
+    that: not r_stats_var_log.stat.exists or
+          (not r_stats_var_log.stat.wgrp and not r_stats_var_log.stat.woth)
+    msg: "/var/log/ is not set with permission of 755 or more stringent"
+
+- name: "05.13.00 Operating System Services and Network Settings\n\tPermission of /root/"
+  stat:
+    path: "/root/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_root
+- name: "05.13.00 Operating System Services and Network Settings\n\tPermission of /root/"
+  assert:
+    that: not r_stats_root.stat.exists or
+          (not r_stats_root.stat.rgrp and not r_stats_root.stat.wgrp and not r_stats_root.stat.xgrp and
+           not r_stats_root.stat.roth and not r_stats_root.stat.woth and not r_stats_root.stat.xoth)
+    msg: "/root is not set with permission of 700 or more stringent"
+
+- name: "05.14.00 Operating System Services and Network Settings\n\tPermission of /tmp/"
+  stat:
+    path: "/tmp/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_tmp
+- name: "05.14.00 Operating System Services and Network Settings\n\tPermission of /tmp/"
+  assert:
+    that: not r_stats_tmp.stat.exists or
+          (r_stats_tmp.stat.mode == '1777')
+    msg: "/tmp is not set with permission of 1777"
+
+- name: "05.15.00 Operating System Services and Network Settings\n\tPermission of /etc/security/"
+  stat:
+    path: "/etc/security/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_security
+- name: "05.15.00 Operating System Services and Network Settings\n\tPermission of /etc/security/"
+  assert:
+    that: not r_stats_etc_security.stat.exists or
+          (not r_stats_etc_security.stat.wgrp and not r_stats_etc_security.stat.woth)
+    msg: "/etc/security/ is not set with permission of 755 or more stringent"
+
+- name: "05.16.00 Operating System Services and Network Settings\n\tPermission of /etc/default/"
+  stat:
+    path: "/etc/default/"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_default
+- name: "05.16.00 Operating System Services and Network Settings\n\tPermission of /etc/default/"
+  assert:
+    that: not r_stats_etc_default.stat.exists or
+          (not r_stats_etc_default.stat.wgrp and not r_stats_etc_default.stat.woth)
+    msg: "/etc/default/ is not set with permission of 755 or more stringent"
+
+- name: "05.17.00 Operating System Services and Network Settings\n\tumask setting"
+  command: grep --silent "^\s*set\s\s*umask\s\s*022$" /home/ec2-user/.bashrc
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.18.00 Operating System Services and Network Settings\n\tsystem umask setting"
+  command: grep --silent "^\s*set\s\s*umask\s\s*027$" /etc/bashrc
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.19.00 Operating System Services and Network Settings\n\troot TMOUT"
+  command: grep --silent "^\s*TMOUT=21600$" /root/.bash_profile
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.20.00 Operating System Services and Network Settings\n\tuser TMOUT"
+  command: grep --silent "^\s*TMOUT=1800$" /etc/profile
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.21.00 Operating System Services and Network Settings\n\tScreen Lock"
+  yum:
+    name: xorg-x11-server-Xorg
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+# 05.22.00 This line left intentionally blank.
+
+- name: "05.23.00 Operating System Services and Network Settings\n\tFTP server must not be installed"
+  yum:
+    name: vsftpd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.23.00 Operating System Services and Network Settings\n\tProFTP server must not be installed"
+  yum:
+    name: proftpd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.24.00 Operating System Services and Network Settings\n\t/etc/hosts.equiv"
+  stat:
+    path: "/etc/hosts.equiv"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_etc_hosts_equiv
+- name: "05.24.00 Operating System Services and Network Settings\n\t/etc/hosts.equiv"
+  assert:
+    that: not r_stats_etc_hosts_equiv.stat.exists
+    msg: "/etc/hosts.equiv exists"
+
+- name: "05.25.00 Operating System Services and Network Settings\n\t.rhosts file"
+  stat:
+    path: "/root/.rhosts"
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_stats_root_rhosts
+- name: "05.25.00 Operating System Services and Network Settings\n\t.rhosts file"
+  assert:
+    that: not r_stats_root_rhosts.stat.exists
+    msg: "/root/.rhosts exists"
+
+# 05.26.00 - 05.26.02 ntp protocol use: Can't do this in AWS!
+
+- name: "05.27.00 Operating System Services and Network Settings\n\tssh"
+  command: grep --silent "^Protocol 2$" /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.28.00 Operating System Services and Network Settings\n\tbootps"
+  yum:
+    name: bootps
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.29.00 Operating System Services and Network Settings\n\tdpid2"
+  yum:
+    name: dpid2
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.30.00 Operating System Services and Network Settings\n\tdiscard"
+  yum:
+    name: discard
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.31.00 Operating System Services and Network Settings\n\tdaytime"
+  yum:
+    name: daytime
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.32.00 Operating System Services and Network Settings\n\techo"
+  yum:
+    name: echo
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.33.00 Operating System Services and Network Settings\n\texec"
+  yum:
+    name: exec
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.34.00 Operating System Services and Network Settings\n\tfinger"
+  yum:
+    name: finger
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.35.00 Operating System Services and Network Settings\n\tftp"
+  yum:
+    name: ftp
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.36.00 Operating System Services and Network Settings\n\thttpdlite"
+  yum:
+    name: httpdlite
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.37.00 Operating System Services and Network Settings\n\tklogin"
+  yum:
+    name: klogin
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.38.00 Operating System Services and Network Settings\n\tkshell"
+  yum:
+    name: kshell
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.39.00 Operating System Services and Network Settings\n\tlogin"
+  yum:
+    name: login
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.40.00 Operating System Services and Network Settings\n\tnetstat"
+  yum:
+    name: netstat
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.41.00 Operating System Services and Network Settings\n\tntalk"
+  yum:
+    name: ntalk
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+# 05.42.00 This line left intentionally blank.
+
+- name: "05.43.00 Operating System Services and Network Settings\n\tpcnfsd"
+  yum:
+    name: pcnfsd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.44.00 Operating System Services and Network Settings\n\tpiobe"
+  yum:
+    name: piobe
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.45.00 Operating System Services and Network Settings\n\tpmd"
+  yum:
+    name: pmd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.46.00 Operating System Services and Network Settings\n\trexec"
+  yum:
+    name: rexec
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.47.00 Operating System Services and Network Settings\n\trlogind"
+  yum:
+    name: rlogind
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.48.00 Operating System Services and Network Settings\n\trouted"
+  yum:
+    name: routed
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.49.00 Operating System Services and Network Settings\n\trshell"
+  yum:
+    name: rshell
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.50.00 Operating System Services and Network Settings\n\trstatd"
+  yum:
+    name: rstatd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.51.00 Operating System Services and Network Settings\n\trwalld"
+  yum:
+    name: rwalld
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.52.00 Operating System Services and Network Settings\n\trwho"
+  yum:
+    name: rwho
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.53.00 Operating System Services and Network Settings\n\trusersd"
+  yum:
+    name: rusersd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.54.00 Operating System Services and Network Settings\n\tshell"
+  yum:
+    name: shell
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.55.00 Operating System Services and Network Settings\n\tsprayd"
+  yum:
+    name: sprayd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.56.00 Operating System Services and Network Settings\n\ttalk"
+  yum:
+    name: talk
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.57.00 Operating System Services and Network Settings\n\ttelnet"
+  yum:
+    name: telnet
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.58.00 Operating System Services and Network Settings\n\ttftp"
+  yum:
+    name: tftp
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.59.00 Operating System Services and Network Settings\n\ttime"
+  yum:
+    name: time
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.60.00 Operating System Services and Network Settings\n\twritesrv"
+  yum:
+    name: writesrv
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.61.00 Operating System Services and Network Settings\n\tsnmp"
+  yum:
+    name: snmp
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.62.00 Operating System Services and Network Settings\n\tbsh"
+  yum:
+    name: bsh
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.63.00 Operating System Services and Network Settings\n\typpasswd"
+  yum:
+    name: yppasswd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.64.00 Operating System Services and Network Settings\n\tcmsd"
+  yum:
+    name: cmsd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.65.00 Operating System Services and Network Settings\n\tdtspcd"
+  yum:
+    name: dtspcd
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.66.00 Operating System Services and Network Settings\n\tttdbserver"
+  yum:
+    name: ttdbserver
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "05.67.00 Operating System Services and Network Settings\n\tsysstat"
+  yum:
+    name: sysstat
+    state: absent
+  become: True
+  become_method: sudo
+  become_user: root
+
+# 05.68.00 - 05.77.00 NFS! AAAH!
+
+- name: "05.77.00 Operating System Services and Network Settings\n\t/etc/exports"
+  copy:
+    src: ./files/zero
+    dest: /etc/exports
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+

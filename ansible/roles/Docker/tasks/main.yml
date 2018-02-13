@@ -1,0 +1,64 @@
+---
+# file: roles/Docker/tasks/main.yml
+
+- name: "Install Docker-CE yum repository configuration"
+  copy:
+    src: docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Validate that Docker is installed"
+  yum:
+    name: docker-ce
+    state: present
+  environment:
+    http_proxy: http://162.95.240.238:8080
+    https_proxy: http://162.95.240.238:8080
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Validate that Docker is enabled at startup and running"
+  systemd:
+    name: docker.service
+    state: started
+    enabled: yes
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Create Docker service override directory"
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    mode: 0755
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Install Docker service override file"
+  copy:
+    src: proxy-and-api.conf
+    dest: /etc/systemd/system/docker.service.d/proxy-and-api.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_copy_proxy_and_api
+
+- name: "Reload / Restart Docker daemon"
+  systemd:
+    name: docker.service
+    state: restarted
+    daemon_reload: yes
+  become: True
+  become_method: sudo
+  become_user: root
+  when: r_copy_proxy_and_api.changed

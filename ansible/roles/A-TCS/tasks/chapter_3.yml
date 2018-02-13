@@ -1,0 +1,144 @@
+---
+# file: roles/A-TCS/tasks/chapter_3.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- name: "03.01.00 Access, Authentication, and Identification\n\tGather uid usage counts from /etc/passwd"
+  shell: "cut -d: -f3 /etc/passwd | sort --numeric-sort | uniq --count"
+  check_mode: no
+  changed_when: False
+  register: r_lines_uid_counts
+- name: "03.01.00 Access, Authentication, and Identification\n\tEach uid must be unique"
+  fail:
+    msg: "uid {{ item.strip().split() | last }} is not unique!"
+  when: "{{ item.strip().split() | first }} != 1"
+  with_items:
+    - "{{ r_lines_uid_counts.stdout_lines }}"
+
+- name: "03.01.01 Access, Authentication, and Identification\n\troot should be limited to console and tty1 in /etc/securetty"
+  copy:
+    src: ./files/etc/securetty
+    dest: /etc/securetty
+    owner: root
+    group: root
+    mode: 0600
+  become: True
+  become_method: sudo
+  become_user: root
+- name: "03.01.01 Access, Authentication, and Identification\n\tIn /etc/ssh/sshd_config, PermitRootLogin must be disabled"
+  command: grep --silent "^\s*PermitRootLogin\s\+no$" /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "03.01.02 Access, Authentication, and Identification\n\tRoot access permitted to members of 'wheel' group"
+  command: grep --silent "^auth\s\+required\s\+pam_wheel\.so\s\+use_uid$" /etc/pam.d/su
+  check_mode: no
+  changed_when: False
+
+- name: "03.01.03 Access, Authentication, and Identification\n\tFTP server must not be installed"
+  yum:
+    name: vsftpd
+    state: absent
+
+- name: "03.01.04 Access, Authentication, and Identification\n\tProFTP server must not be installed"
+  yum:
+    name: proftpd
+    state: absent
+
+- name: "03.02.00 Access, Authentication, and Identification\n\tGather a list of all GIDs present in /etc/passwd"
+  shell: "cut -d: -f4 /etc/passwd | sort --numeric-sort | uniq"
+  check_mode: no
+  changed_when: False
+  register: r_lines_gid_etc_passwd
+- name: "03.02.00 Access, Authentication, and Identification\n\tGather a list of all GIDs present in /etc/group"
+  shell: "cut -d: -f3 /etc/group | sort --numeric-sort | uniq"
+  check_mode: no
+  changed_when: False
+  register: r_lines_gid_etc_group
+- name: "03.02.00 Access, Authentication, and Identification\n\tAll GIDs in /etc/passwd must also be in /etc/group file"
+  fail:
+    msg: "gid {{ item }} is not present in /etc/group file"
+  when: "{{ item  not in  r_lines_gid_etc_group.stdout_lines }}"
+  with_items:
+    - "{{ r_lines_gid_etc_passwd.stdout_lines }}"
+
+- name: "03.03.00 - 03.03.04 Access, Authentication, and Identification\n\tRetrieve file paths for /etc/rc.d/* (recursively)"
+  find:
+    paths: /etc/rc.d
+    recurse: yes
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_paths_etc_rcd
+- name: "03.03.00 - 03.03.04 Access, Authentication, and Identification\n\tRetrieve file stats for all system init files"
+  stat:
+    path: "{{ item.path }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items:
+    - { path: '/root/.bash_profile' }
+    - { path: '/boot/grub/grub.conf' }
+    - { path: '/etc/profile' }
+    - { path: '/boot/grub2/grub.cfg' }
+    - "{{ r_paths_etc_rcd.files }}"
+  register: r_stats_systems_init_files
+- name: "03.03.00 - 03.03.04 Access, Authentication, and Identification\n\tSystem's Initialization Files must be owned by root"
+  fail:
+    msg: "{{ item.stat.path }} is not owned by root"
+  when: item.stat.pw_name != "root"
+  with_items: "{{ r_stats_systems_init_files.results }}"
+
+- name: "03.04.00 Access, Authentication, and Identification\n\tBusiness Use Notice (MOTD)"
+  copy:
+    src: ./files/etc/motd
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+- name: "03.04.00 Access, Authentication, and Identification\n\tBusiness Use Notice (Issue)"
+  copy:
+    src: ./files/etc/motd
+    dest: /etc/issue
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+- name: "03.04.00 Access, Authentication, and Identification\n\tBusiness Use Notice (Issue.net)"
+  copy:
+    src: ./files/etc/motd
+    dest: /etc/issue.net
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "03.04.01 Access, Authentication, and Identification\n\tsshd_config must have PrintMotd explicitly enabled"
+  command: grep --silent "^\s*PrintMotd\s\+yes$" /etc/ssh/sshd_config
+  check_mode: no
+  changed_when: False
+  become: True
+  become_method: sudo
+  become_user: root
+
+# 03.04.03 - proftpd already ensure to not be installed
+
+# 03.04.04 - ftp daemon already ensured to not be installed
+
+# 03.05.00 Line left intentionally blank
+

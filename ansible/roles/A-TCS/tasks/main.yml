@@ -1,0 +1,16 @@
+---
+# file: roles/A-TCS/tasks/main.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- include: chapter_1.yml
+- include: chapter_2.yml
+- include: chapter_3.yml
+- include: chapter_4.yml
+- include: chapter_5.yml
+- include: chapter_6.yml

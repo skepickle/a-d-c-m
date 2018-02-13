@@ -1,0 +1,15 @@
+---
+# file: roles/Docker-Registry/tasks/main.yml
+
+#- name: "Validate that Docker is installed"
+#  yum:
+#    name: docker-engine
+#    state: present
+#- name: "Validate that Docker is enabled at startup and running"
+#  service:
+#    name: docker
+#    state: started
+#    enabled: yes
+
+- name: "This role needs to make sure the Docker Registry is running, Docker will be installed because of role dependency setup"
+  command: ls

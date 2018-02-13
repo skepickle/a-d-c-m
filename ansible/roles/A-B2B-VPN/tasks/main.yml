@@ -1,0 +1,91 @@
+---
+# file: roles/A-B2B-VPN/tasks/main.yml
+#
+# This role configures the network and proxy settings of instances so they can use A's B2B VPN connection for access to the internet.
+#
+
+# DNS
+
+- name: "Configure network script to use A DNS servers"
+  copy:
+    src: ./files/ifcfg-eth0
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+    owner: root
+    group: root
+    mode: 0644
+  register: r_copy_ifcfg_eth0
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Restart NetworkManager service in order to regenerate resolv.conf based on network script changes"
+  systemd:
+    name: NetworkManager.service
+    state: restarted
+  when: r_copy_ifcfg_eth0.changed
+  become: True
+  become_method: sudo
+  become_user: root
+
+# SSL Certs
+
+- name: "OS certs; copy to anchors folder"
+  copy:
+    src: a_certs/
+    dest: /etc/pki/ca-trust/source/anchors/
+    owner: root
+    group: root
+    mode: 0644
+  register: r_copy_a_certs
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "OS certs; update-ca-trust force-enable"
+  command: update-ca-trust force-enable
+  when: r_copy_a_certs.changed
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "OS certs; update-ca-trust extract"
+  command: update-ca-trust extract
+  when: r_copy_a_certs.changed
+  become: True
+  become_method: sudo
+  become_user: root
+
+# Proxy
+
+- name: "Setup A Proxy Environment Variables"
+  copy:
+    src: proxy.sh
+    dest: /etc/profile.d/proxy.sh
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Setup A Proxy Environment Variables"
+  copy:
+    src: proxy.sh
+    dest: /etc/profile.d/proxy.csh
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "Setup A Proxy for Yum"
+  copy:
+    src: yum.conf
+    dest: /etc/yum.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: True
+  become_method: sudo
+  become_user: root

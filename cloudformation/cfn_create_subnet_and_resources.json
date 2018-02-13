@@ -1,0 +1,187 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Create a Nimbus subnet and instances.",
+  "Parameters": {
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "must be the name of an existing EC2 KeyPair.",
+      "Default": "aws_nimbus",
+    },
+    "InstanceType": {
+      "Description": "EC2 instance type",
+      "Type": "String",
+      "Default": "m4.large",
+      "AllowedValues": [
+        "t2.large",
+        "t2.xlarge",
+        "t2.2xlarge",
+        "m4.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+    "SubnetCidrBlock": {
+      "Type": "String",
+      "Description": "CIDR block for the new subnet. Must be unique.",
+      "AllowedValues": [
+        "22.252.129.32/28",
+        "22.252.129.64/28",
+        "22.252.129.96/28",
+        "22.252.129.128/28",
+        "22.252.129.160/28",
+        "22.252.129.194/28",
+        "22.252.129.224/28"
+      ],
+      "ConstraintDescription": "must be a valid CIDR block"
+    },
+    "DockerImageTag": {
+      "Type": "String",
+      "Description": "The tag that was applied to the Docker images when built and pushed from Bamboo",
+      "ConstraintDescription": "Must be a string",
+      "Default": "latest",
+    }
+  },
+  "Resources": {
+    "subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "CidrBlock": {
+          "Ref": "SubnetCidrBlock"
+        },
+        "MapPublicIpOnLaunch": false,
+        "VpcId": "vpc-13793974",
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                ":",
+                [
+                  "Subnet",
+                  {
+                    "Ref": "AWS::StackName"
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Server": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "ImageId": "ami-fd58c0eb",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "IamInstanceProfile": "dockerAgent",
+        "SecurityGroupIds": [
+          "sg-3182e34e"
+        ],
+        "SubnetId": {
+          "Ref": "subnet"
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                ":",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Server"
+                ]
+              ]
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "export HTTP_PROXY=http://162.95.240.240:8080\n",
+                "export HTTPS_PROXY=${HTTP_PROXY}\n",
+                "export NO_PROXY=localhost,127.0.0.1,169.254.169.254\n",
+                "sudo -E aws --no-verify-ssl s3 cp s3://nimbus.bootstrap.scripts/nimbus_docker_bootstrap.sh .\n",
+                "sudo sh ./nimbus_docker_bootstrap.sh ",
+                {
+                  "Ref": "SubnetCidrBlock"
+                },
+                " ",
+                {
+                  "Ref": "DockerImageTag"
+                },
+                "\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "DNSRecord": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneName": "a.aws.int.",
+        "Comment": "DNS name for this environment",
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "AWS::StackName"
+              },
+              ".a.aws.int"
+            ]
+          ]
+        },
+        "Type": "A",
+        "TTL": "900",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "Server",
+              "PrivateIp"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "SubnetId": {
+      "Value": {
+        "Ref": "subnet"
+      }
+    },
+    "ServerIp": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Server",
+          "PrivateIp"
+        ]
+      }
+    }
+  }
+}

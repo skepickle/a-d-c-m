@@ -1,0 +1,11 @@
+---
+# file: site.yml
+- hosts: bamboo-meta-agents
+  roles:
+    - Docker
+- hosts: git-servers
+  roles:
+    - A-B2B-VPN
+- hosts: dns-servers
+  roles:
+    - A-TCS

@@ -1,0 +1,18 @@
+---
+# file: roles/A-TCS/tasks/chapter_1.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- name: "01.01    Platform Standards\n\tOperating System"
+  assert:
+    that: ansible_distribution == 'RedHat'
+    msg: "Target server must be RHEL"
+- name: "01.02    Platform Standards\n\tOperating System Version"
+  assert:
+    that: ansible_distribution_version | int == 7
+    msg: "Target server must be running RHEL7"

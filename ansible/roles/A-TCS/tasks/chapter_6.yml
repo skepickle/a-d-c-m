@@ -1,0 +1,146 @@
+---
+# file: roles/A-TCS/tasks/chapter_6.yml
+#
+# A Information Security
+# Technical Configuration Standard
+# Linux Platform
+# Version 7.0
+# Document Number: IS-TCS-011
+# Last Revision: July 29, 2016
+#
+- name: "06.01.02 Audit, Logging, and Compliance\n\tLogin success or failure"
+  command: grep --silent "^\s*\$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat" /etc/rsyslog.conf
+  check_mode: no
+  changed_when: False
+
+- name: "06.01.02 Audit, Logging, and Compliance\n\tLogin success or failure"
+  command: grep --silent "\*\.info;mail\.none;authpriv\.none;cron\.none\s\s*\/var\/log\/messages" /etc/rsyslog.conf
+  check_mode: no
+  changed_when: False
+
+- name: "06.01.02 Audit, Logging, and Compliance\n\tLogin success or failure"
+  command: grep --silent "authpriv\.\*\s\s*\/var\/log\/secure" /etc/rsyslog.conf
+  check_mode: no
+  changed_when: False
+
+# 06.02.00 Line left intentionally blank.
+
+# 06.03.00 Line left intentionally blank.
+
+# 06.04.00 Line left intentionally blank.
+
+- name: "06.05.00 Audit, Logging, and Compliance\n\t/var/log/wtmp"
+  stat:
+    path: "/var/log/wtmp"
+  register: r_stats_var_log_wtmp
+- name: "06.05.00 Audit, Logging, and Compliance\n\t/var/log/wtmp"
+  assert:
+    that: r_stats_var_log_wtmp.stat.exists
+    msg: "/var/log/wtmp does not exist"
+
+- name: "06.06.00 Audit, Logging, and Compliance\n\t/var/run/utmp"
+  stat:
+    path: "/var/run/utmp"
+  register: r_stats_var_run_utmp
+- name: "06.06.00 Audit, Logging, and Compliance\n\t/var/run/utmp"
+  assert:
+    that: r_stats_var_run_utmp.stat.exists
+    msg: "/var/run/utmp does not exist"
+
+- name: "06.07.00 Audit, Logging, and Compliance\n\t/var/log/btmp"
+  stat:
+    path: "/var/log/btmp"
+  register: r_stats_var_log_btmp
+- name: "06.07.00 Audit, Logging, and Compliance\n\t/var/log/btmp"
+  assert:
+    that: r_stats_var_log_btmp.stat.exists
+    msg: "/var/log/btmp does not exist"
+
+# 06.08.00 Line left intentionally blank.
+
+- name: "06.09.00 Audit, Logging, and Compliance\n\t/var/log/cron"
+  stat:
+    path: "/var/log/cron"
+  register: r_stats_var_log_cron
+- name: "06.09.00 Audit, Logging, and Compliance\n\t/var/log/cron"
+  assert:
+    that: r_stats_var_log_cron.stat.exists and (r_stats_var_log_cron.stat.mode == '0600')
+    msg: "/var/log/cron does not exist or permission mode not 0600"
+
+# 06.10.00 Line left intentionally blank.
+
+- name: "06.11.00 Audit, Logging, and Compliance\n\t/var/log/maillog"
+  stat:
+    path: "/var/log/maillog"
+  register: r_stats_var_log_maillog
+- name: "06.11.00 Audit, Logging, and Compliance\n\t/var/log/maillog"
+  assert:
+    that: r_stats_var_log_maillog.stat.exists
+    msg: "/var/log/maillog does not exist"
+
+# 06.11.01 /etc/syslog.conf not being used on RHEL7 system
+
+- name: "06.12.00 Audit, Logging, and Compliance\n\tRecord history of successful and unsuccessful sudo"
+  stat:
+    path: "/var/log/messages"
+  register: r_stats_var_log_messages
+- name: "06.12.00 Audit, Logging, and Compliance\n\tRecord history of successful and unsuccessful sudo"
+  stat:
+    path: "/var/log/secure"
+  register: r_stats_var_log_secure
+- name: "06.12.00 Audit, Logging, and Compliance\n\tRecord history of successful and unsuccessful sudo"
+  assert:
+    that: r_stats_var_log_messages.stat.exists and r_stats_var_log_secure.stat.exists
+    msg: "/var/log/messages does not exist or /var/log/secure does not exist"
+
+- name: "06.13.00 Audit, Logging, and Compliance\n\t/etc/sudoers must exist"
+  stat:
+    path: "/etc/sudoers"
+  register: r_stats_etc_sudoers
+- name: "06.13.00 Audit, Logging, and Compliance\n\t/etc/sudoers must exist"
+  assert:
+    that: r_stats_etc_sudoers.stat.exists
+    msg: "/etc/sudoers does not exist"
+- name: "06.13.01 Audit, Logging, and Compliance\n\t/etc/sudoers permissions = 440"
+  assert:
+    that: r_stats_etc_sudoers.stat.mode == '0440'
+    msg: "/etc/sudoers permissions is not set to 440"
+- name: "06.13.02 Audit, Logging, and Compliance\n\t/etc/sudoers owned by root"
+  assert:
+    that: r_stats_etc_sudoers.stat.pw_name == 'root'
+    msg: "/etc/sudoers owner is not root"
+
+- name: "06.14.00 Audit, Logging, and Compliance\n\t/etc/sudoers.d/ permissions = 2550"
+  file:
+    path: /etc/sudoers.d
+    owner: root
+    group: root
+    mode: '2550'
+  become: True
+  become_method: sudo
+  become_user: root
+
+- name: "06.14.01 Audit, Logging, and Compliance\n\tFiles within /etc/sudoers.d/ permissions = 440"
+  find:
+    paths: /etc/sudoers.d
+    recurse: yes
+  become: True
+  become_method: sudo
+  become_user: root
+  register: r_paths_etc_sudoersd
+- name: "06.14.01 Audit, Logging, and Compliance\n\tFiles within /etc/sudoers.d/ permissions = 440"
+  stat:
+    path: "{{ item.path }}"
+  become: True
+  become_method: sudo
+  become_user: root
+  with_items: "{{ r_paths_etc_sudoersd.files }}"
+  register: r_stats_etc_sudoersd_files
+- name: "06.14.01 Audit, Logging, and Compliance\n\tFiles within /etc/sudoers.d/ permissions = 440"
+  assert:
+    that: item.stat.mode == '0440'
+    msg: "{{ item.stat.path }} permissions is not set to 440"
+  with_items: "{{ r_stats_etc_sudoersd_files.results }}"
+
+# 06.14.02 Already handled in 06.14.00 above
+
